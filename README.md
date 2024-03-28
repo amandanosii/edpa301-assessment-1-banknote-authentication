@@ -1,2 +1,3 @@
-# edpa301-assessment-1-banknote-authentication
-Electronic Design Project 3A Assessment 1
+# Electronic Design Project 3A Assessment 1
+
+## Banknote Authentication
