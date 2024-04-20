@@ -6,6 +6,8 @@ import cv2
 import skimage as ski
 import numpy as np
 
+from werkzeug.datastructures import FileStorage
+
 from firebase_functions import https_fn, options
 from firebase_admin import initialize_app
 from google.cloud import vision
@@ -21,13 +23,12 @@ def on_request_example(req: https_fn.Request) -> https_fn.Response:
     return https_fn.Response("Hello world!")
 
 
-def detect_text_using_google_vision(banknote_image):
+def detect_text_using_google_vision(image_content):
     """
     Perform text detection using Google Vision API
     Returns:
         detected_text: str | None
     """
-    image_content = banknote_image.read()
     image = vision.Image(content=image_content)
     response = vision_client.text_detection(image=image)
     texts = response.text_annotations
@@ -66,10 +67,15 @@ def crop_at_banknote_edges(image):
     Returns:
         cropped_image: ndarray
     """
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # Read the image file from the FileStorage object
+    # image_stream = image.stream
+    file_bytes = np.asarray(bytearray(image), dtype=np.uint8)
+    
+    image_array = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+    cv2_img = cv2.cvtColor(image_array, cv2.COLOR_BGR2GRAY)
 
     # Apply edge detection to find contours
-    edges = cv2.Canny(image, 30, 150)
+    edges = cv2.Canny(cv2_img, 30, 150)
     contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # Find the largest contour (presumably the banknote)
@@ -79,7 +85,7 @@ def crop_at_banknote_edges(image):
     x, y, w, h = cv2.boundingRect(largest_contour)
 
     # Make a copy of the original image to draw on
-    image_with_boxes = image.copy()
+    image_with_boxes = cv2_img.copy()
 
     # Get the bounding rectangles for all contours
     bounding_rectangles = [cv2.boundingRect(contour) for contour in contours]
@@ -97,7 +103,7 @@ def crop_at_banknote_edges(image):
     cv2.rectangle(image_with_boxes, (x, y), (x + w, y + h), (255, 255, 255), 2)
 
     # Crop the image using the bounding box
-    cropped_image = image[y:y+h, x:x+w]
+    cropped_image = cv2_img[y:y+h, x:x+w]
 
     return cropped_image
 
@@ -128,6 +134,7 @@ def create_histogram(image):
     img_float_ndarray = ski.util.img_as_float(image)
     img_float_ndarray[img_float_ndarray < 0.4] = -1
     histogram, bin_edges = np.histogram(img_float_ndarray, bins=256, range=(0, 1))
+    
     return (histogram, bin_edges)
 
 
@@ -136,15 +143,19 @@ def authenticate_banknote(req: https_fn.Request) -> https_fn.Response:
     """Authenticate a banknote image sent via HTTP POST."""
     # Get the banknote image from the request
     banknote_image = req.files['img']
-    detected_text = detect_text_using_google_vision(banknote_image)
+    img_content = banknote_image.read()
+
+    detected_text = detect_text_using_google_vision(img_content)
 
     if detected_text is None:
         return https_fn.Response("No text detected in the image", status=400)
 
     value = determine_value_from_text_detection(detected_text)
-    cropped_img = crop_at_banknote_edges(banknote_image)
-    feature_enhanced_image = enhance_features(cropped_img)
-    hist, bin_edges = create_histogram(feature_enhanced_image)
+    cropped_img = crop_at_banknote_edges(img_content)
+    cv2.imwrite("cropped_image.jpg", cropped_img)
 
+    # feature_enhanced_image = enhance_features(cropped_img)
+    # hist, bin_edges = create_histogram(feature_enhanced_image)
+    print(cropped_img)
 
     return https_fn.Response(detected_text)
