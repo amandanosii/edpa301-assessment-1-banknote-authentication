@@ -3,6 +3,7 @@
 # Deploy with `firebase deploy`
 import re
 import cv2
+import json
 import skimage as ski
 import numpy as np
 
@@ -152,10 +153,14 @@ def authenticate_banknote(req: https_fn.Request) -> https_fn.Response:
 
     value = determine_value_from_text_detection(detected_text)
     cropped_img = crop_at_banknote_edges(img_content)
-    cv2.imwrite("cropped_image.jpg", cropped_img)
 
-    # feature_enhanced_image = enhance_features(cropped_img)
-    # hist, bin_edges = create_histogram(feature_enhanced_image)
-    print(cropped_img)
+    feature_enhanced_image = enhance_features(cropped_img)
+    hist, bin_edges = create_histogram(feature_enhanced_image)
 
-    return https_fn.Response(detected_text)
+    res_obj = {
+        "value": value,
+        "detected_text": detected_text,
+        "res": None
+    }
+
+    return https_fn.Response(json.dumps(str(res_obj)))
