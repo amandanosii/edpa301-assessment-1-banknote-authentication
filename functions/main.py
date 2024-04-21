@@ -1,22 +1,16 @@
-# Welcome to Cloud Functions for Firebase for Python!
-# To get started, simply uncomment the below code or create your own.
-# Deploy with `firebase deploy`
+# [START edpa301-banknote-auth]
 import re
 import cv2
 import json
 import skimage as ski
 import numpy as np
 
-from werkzeug.datastructures import FileStorage
-
 from firebase_functions import https_fn, options
 from firebase_admin import initialize_app
 from google.cloud import vision
 
-# Initialize Firebase App
 initialize_app()
 
-# Initialize Google Cloud Vision API client
 vision_client = vision.ImageAnnotatorClient()
 
 @https_fn.on_request(cors=options.CorsOptions(cors_origins="*", cors_methods=["get"]))
@@ -164,3 +158,5 @@ def authenticate_banknote(req: https_fn.Request) -> https_fn.Response:
     }
 
     return https_fn.Response(json.dumps(str(res_obj)))
+
+# [END edpa301-banknote-auth]

@@ -1,9 +1,8 @@
 {
   "functions": [
     {
-      "runtime": "python310",
+      "codebase": "edpa301-banknote-auth",
       "source": "functions",
-      "codebase": "default",
       "ignore": [
         "venv",
         ".git",
