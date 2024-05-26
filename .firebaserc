@@ -1,8 +1,0 @@
-{
-  "projects": {
-    "production": "edpa301-banknote-auth",
-    "default": "edpa301-banknote-auth"
-  },
-  "targets": {},
-  "etags": {}
-}
